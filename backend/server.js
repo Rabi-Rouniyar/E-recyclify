@@ -36,9 +36,21 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS configuration for frontend connection
+// app.use(cors({
+//   origin: process.env.CLIENT_URL || 'http://localhost:5173',
+//   credentials: true
+// }));
+
+const allowedOrigin = process.env.CLIENT_URL;
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
+  origin: allowedOrigin,
+  credentials: true,
+}));
+
+app.options("*", cors({
+  origin: allowedOrigin,
+  credentials: true,
 }));
 
 // Security headers

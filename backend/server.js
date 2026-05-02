@@ -15,49 +15,56 @@ import recyclerRoutes from './routes/recyclerRoutes.js';
 import pickupRoutes from './routes/pickupRoutes.js';
 import mapRoutes from './routes/mapRoutes.js';
 
-// Load environment variables
+// Load env
 dotenv.config();
 
-// Connect to MongoDB
+// Connect DB
 connectDB();
 
 const app = express();
 
 // ==========================================
+// 🔥 CORS (FIXED FOR RENDER DEPLOYMENT)
+// ==========================================
+
+const allowedOrigins = [
+  'https://e-recyclify-frontend.onrender.com',
+  'http://localhost:5173'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  credentials: true,
+}));
+
+app.options('*', cors()); // handle preflight
+
+// ==========================================
 // Middlewares
 // ==========================================
-app.use(express.json()); // Parse JSON payloads
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded payloads
-app.use(cookieParser()); // Parse cookies
 
-// Serve local uploads folder
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Serve uploads
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS configuration for frontend connection
-// app.use(cors({
-//   origin: process.env.CLIENT_URL || 'http://localhost:5173',
-//   credentials: true
-// }));
-
-const allowedOrigin = process.env.CLIENT_URL;
-
-app.use(cors({
-  origin: allowedOrigin,
-  credentials: true,
-}));
-
-app.options("*", cors({
-  origin: allowedOrigin,
-  credentials: true,
-}));
-
-// Security headers
+// Security
 app.use(helmet());
+
+// Passport
 app.use(passport.initialize());
 
-// HTTP request logging in development
+// Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
@@ -65,21 +72,38 @@ if (process.env.NODE_ENV === 'development') {
 // ==========================================
 // Routes
 // ==========================================
+
+app.get('/', (req, res) => {
+  res.send('API is running...');
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/recyclers', recyclerRoutes);
 app.use('/api/pickups', pickupRoutes);
 app.use('/api/maps', mapRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'success', message: 'E-Recyclify API is running...' });
+  res.json({
+    status: 'success',
+    message: 'Backend working 🚀'
+  });
 });
 
 // ==========================================
-// Error Handling Middleware (To be added later)
+// Error Handler
+// ==========================================
+
+app.use((err, req, res, next) => {
+  console.error(err.message);
+  res.status(500).json({ error: err.message });
+});
+
+// ==========================================
+// Start Server
 // ==========================================
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
